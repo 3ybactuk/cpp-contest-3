@@ -34,7 +34,7 @@ public:
         } else {
             int rem = 0;
 
-            for (int i = 0; (i < _digits.size()) || (i < other._digits.size()) || rem; ++i) {
+            for (size_t i = 0; (i < _digits.size()) || (i < other._digits.size()) || rem; ++i) {
                 int digit_res = rem;
 
                 if ((i < _digits.size()) && (i < other._digits.size())) {
@@ -49,7 +49,7 @@ public:
                     _digits[i] = digit_res % 10;
                 }
 
-                rem = digit_res > 10;
+                rem = digit_res >= 10;
             }
         }
 
@@ -63,7 +63,7 @@ public:
             if (*this < other) { _is_negative = !_is_negative; }
 
             int owe = 0;
-            for (int i = 0; i < other._digits.size(); ++i) {
+            for (size_t i = 0; i < other._digits.size(); ++i) {
                 int digit_res = -owe - other._digits[i];
 
                 if (i < _digits.size()) {
@@ -90,22 +90,33 @@ public:
         return *this;
     }
 
-    bigint& operator*= (const bigint& other) const {
-        bigint res;
-        res._digits = std::vector<int> (_digits.size() + other._digits.size(), 0);
-        res._is_negative = (_is_negative != other._is_negative);
+    bigint& operator*= (const bigint& other) {
+        std::vector<int> mults(_digits.size() + other._digits.size(), 0);
+        _is_negative = (_is_negative != other._is_negative);
 
-        for (int i = 0; i < other._digits.size(); ++i) {
-            int rem = 0;
-            for (int j = 0; j < _digits.size(); ++j) {
-                int tmp = other._digits[i] * _digits[j] + rem;
-                rem = tmp / 10;
+        for (size_t i = 0; i < other._digits.size(); ++i) {
+            for (size_t j = 0; j < _digits.size(); ++j) {
+                mults[i + j] += other._digits[i] * _digits[j];
             }
         }
+        _digits.resize(_digits.size() + other._digits.size());
+        int rem = 0;
+        for (size_t i = 0; i < _digits.size(); ++i) {
+            rem += mults[i];
+            mults[i] = rem % 10;
+            rem /= 10;
+            _digits[i] = mults[i];
+        }
+
+        while (_digits.back() == 0 && _digits.size() != 1) {
+            _digits.pop_back();
+        }
+
+        return *this;
     }
 
-    bigint& operator++ () { operator+=(1); }
-    bigint& operator-- () { operator-=(1); }
+    bigint& operator++ () { return operator+=(1); }
+    bigint& operator-- () { return operator-=(1); }
 
     const bigint operator++ (int) {
         bigint tmp = *this;
@@ -163,10 +174,6 @@ bool operator< (const bigint& lhs, const bigint& rhs) {
     return false;
 }
 
-bool operator<= (const bigint& lhs, const bigint& rhs) { return (lhs < rhs) || (lhs == rhs); }
-bool operator> (const bigint& lhs, const bigint& rhs) { return !(lhs <= rhs); }
-bool operator>= (const bigint& lhs, const bigint& rhs) { return !(lhs < rhs); }
-
 bool operator== (const bigint& lhs, const bigint& rhs) {
     if ((lhs._is_negative != rhs._is_negative) || (lhs._digits.size() != rhs._digits.size())) {
         return false;
@@ -184,13 +191,27 @@ bool operator== (const bigint& lhs, const bigint& rhs) {
     return true;
 }
 
+bool operator<= (const bigint& lhs, const bigint& rhs) { return (lhs < rhs) || (lhs == rhs); }
+bool operator> (const bigint& lhs, const bigint& rhs) { return !(lhs <= rhs); }
+bool operator>= (const bigint& lhs, const bigint& rhs) { return !(lhs < rhs); }
 bool operator!= (const bigint& lhs, const bigint& rhs) { return !(lhs == rhs); }
 
 std::istream& operator>> (std::istream& is, bigint& num) {
     std::string buff;
     is >> buff;
 
-    num = bigint(std::stoi(buff));
+    if (buff[0] == '-') {
+        buff[0] = '0';
+        num._is_negative = true;
+    }
+    num._digits.resize(buff.size());
+    for (int i = buff.size() - 1; i >= 0; --i) {
+        num._digits[buff.size() - i - 1] = buff[i] - '0';
+    }
+
+    while (num._digits.back() == 0 && num._digits.size() != 1) {
+        num._digits.pop_back();
+    }
 
     return is;
 }
@@ -204,27 +225,45 @@ std::ostream& operator<<(std::ostream& os, const bigint& num) {
     return os;
 }
 
-int main() {
-    bigint x, y;
-    char op;
-
-    std::cin >> x >> op >> y;
-
-    bigint tmp = x;
-    switch (op) {
-        case '-':
-            tmp -= y;
-            std::cout << "x -= y: " << tmp << std::endl;
-            std::cout << " x - y: " << (x - y) << std::endl;
-            break;
-        case '+':
-            tmp += y;
-            std::cout << "x += y: " << tmp << std::endl;
-            std::cout << " x + y: " << (x + y) << std::endl;
-            break;
-        default:
-            break;
+void factorial(bigint num) {
+    bigint res = 1;
+    for (int i = 1; i <= num; ++i) {
+        res *= i;
     }
+
+    std::cout << res << std::endl;
+}
+
+int main() {
+//    bigint x;
+//    std::cin >> x;
+//    factorial(x);
+
+//    bigint x, y;
+//    char op;
+//
+//    std::cin >> x >> op >> y;
+//
+//    bigint tmp = x;
+//    switch (op) {
+//        case '-':
+//            tmp -= y;
+//            std::cout << "x -= y: " << tmp << std::endl;
+//            std::cout << " x - y: " << (x - y) << std::endl;
+//            break;
+//        case '+':
+//            tmp += y;
+//            std::cout << "x += y: " << tmp << std::endl;
+//            std::cout << " x + y: " << (x + y) << std::endl;
+//            break;
+//        case '*':
+//            tmp *= y;
+//            std::cout << "x *= y: " << tmp << std::endl;
+//            std::cout << " x * y: " << (x * y) << std::endl;
+//            break;
+//        default:
+//            break;
+//    }
 
     return 0;
 }
