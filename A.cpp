@@ -10,7 +10,7 @@ public:
     bigint& operator= (const bigint& other) = default;
     ~bigint () = default;
 
-    bigint (int num = 0): _digits(), _is_negative(num < 0) {
+    bigint (long long num = 0): _digits(), _is_negative(num < 0) {
         num = std::abs(num);
 
         do {
@@ -60,31 +60,44 @@ public:
         if (_is_negative != other._is_negative) {
             *this += (-other);
         } else {
-            if (*this < other) { _is_negative = !_is_negative; }
+            bigint a = *this;
+            bigint b = other;
+            // Remove sign to perform abs() check:
+            a._is_negative = false;
+            b._is_negative = false;
+            if (a < b) {
+                b = *this;
+                a = other;
+                a._is_negative = !_is_negative;
+            } else {
+                a._is_negative = other._is_negative;
+            }
 
             int owe = 0;
-            for (size_t i = 0; i < other._digits.size(); ++i) {
-                int digit_res = -owe - other._digits[i];
+            for (size_t i = 0; i < a._digits.size() || owe; ++i) {
+                int digit_res = -owe + a._digits[i];
 
-                if (i < _digits.size()) {
-                    digit_res += _digits[i];
-                    owe = digit_res < 0;
+                if (i < b._digits.size()) {
+                    digit_res -= b._digits[i];
                 }
 
-                digit_res = std::abs(digit_res) % 10;
+                owe = digit_res < 0;
+                if (owe) {
+                    digit_res += 10;
+                }
 
-                if (owe && i == (_digits.size() - 1)) {
-                    _digits.erase(_digits.begin());
-                } else if (i >= _digits.size()) {
-                    _digits.push_back(digit_res);
+                if (i >= a._digits.size()) {
+                    a._digits.push_back(digit_res);
                 } else {
-                    _digits[i] = digit_res;
+                    a._digits[i] = digit_res;
                 }
             }
 
-            while (_digits.back() == 0 && _digits.size() != 1) {
-                _digits.pop_back();
+            while (a._digits.back() == 0 && a._digits.size() != 1) {
+                a._digits.pop_back();
             }
+
+            *this = a;
         }
 
         return *this;
@@ -130,13 +143,13 @@ public:
         return tmp;
     }
 
-    const bigint operator- () const {
+    bigint operator- () const {
         bigint tmp = *this;
         tmp._is_negative = !tmp._is_negative;
         return tmp;
     }
 
-    const bigint operator+ () const { return *this; }
+    bigint operator+ () const { return *this; }
 
     friend bool operator< (const bigint& lhs, const bigint& rhs);
     friend bool operator== (const bigint& lhs, const bigint& rhs);
@@ -147,9 +160,9 @@ private:
     bool _is_negative;
 };
 
-const bigint operator+ (const bigint& first, const bigint& second) { return bigint(first) += second; }
-const bigint operator- (const bigint& first, const bigint& second) { return bigint(first) -= second; }
-const bigint operator* (const bigint& first, const bigint& second) { return bigint(first) *= second; }
+bigint operator+ (const bigint& first, const bigint& second) { return bigint(first) += second; }
+bigint operator- (const bigint& first, const bigint& second) { return bigint(first) -= second; }
+bigint operator* (const bigint& first, const bigint& second) { return bigint(first) *= second; }
 
 bool operator< (const bigint& lhs, const bigint& rhs) {
     if (lhs._is_negative != rhs._is_negative) { return lhs._is_negative; }
@@ -160,7 +173,9 @@ bool operator< (const bigint& lhs, const bigint& rhs) {
         auto it_rhs = rhs._digits.rbegin();
 
         while (it_lhs != lhs._digits.rend()) {
-            if ((*it_lhs != *it_rhs) && ((*it_lhs < *it_rhs) != is_negative)) { return true; }
+            if (!is_negative && (*it_lhs < *it_rhs)) { return true; }
+            else if (is_negative && (*it_lhs > *it_rhs)) { return true; }
+            else if (*it_lhs != *it_rhs) { return false; }
             ++it_lhs;
             ++it_rhs;
         }
@@ -223,15 +238,6 @@ std::ostream& operator<<(std::ostream& os, const bigint& num) {
     }
 
     return os;
-}
-
-void factorial(bigint num) {
-    bigint res = 1;
-    for (int i = 1; i <= num; ++i) {
-        res *= i;
-    }
-
-    std::cout << res << std::endl;
 }
 
 int main() {
