@@ -38,7 +38,6 @@ public:
 
     ~matrix() { delete[] _matrix; }
 
-
     void print() {
         for (size_t i = 0; i < height; ++i) {
             for (size_t j = 0; j < width; ++j) {
@@ -76,11 +75,12 @@ public:
         return sum;
     }
 
-    matrix_minor minor(size_t i, size_t j) {
+    const matrix_minor Minor(size_t i, size_t j) const {
         matrix_minor res;
 
-        size_t a = 0, b = 0;
+        size_t a = 0;
         for (size_t x = 0; x < height; ++x) {
+            size_t b = 0;
             if (x != i) {
                 for (size_t y = 0; y < width; ++y) {
                     if (y != j) {
@@ -96,7 +96,17 @@ public:
     }
 
     vt det() const {
-        return 0;
+        /// Det = SUM_j=1^n (-1)^(1+j) * a_1_j * M_j^1
+        if (height == 2) { return (*this)(0, 0) * (*this)(1, 1) - (*this)(1, 0) * (*this)(0, 1); }
+
+        vt sum = 0;
+
+        for (size_t j = 0; j < width; ++j) {
+            int sgn = (j % 2) ? -1 : 1;
+            sum += sgn * _matrix[0 + j] * Minor(0, j).det();
+        }
+
+        return sum;
     }
 
     template<typename vt2, size_t x, size_t y>
@@ -243,8 +253,9 @@ matrix<vt, height, width> operator* (const vt2 num, const matrix<vt, height, wid
 
 
 int main() {
-    matrix<int, 6, 6> A;
-    matrix<int, 6, 6> B;
+#define len 6
+    matrix<int, len, len> A;
+    matrix<int, len, len> B;
 
     // {{0, 4, 0, 0, 0, 0}, {0, 0, 0, 50, 0, -21}, {86, 10, 0, -26, 0, 0}, {0, 94, 0, 0, 0, 0}, {-52, 6, 0, 0, -6, 0}, {0, 0, 0, -75, 0, 71}})
     // matrix<i, 6, 6>({{0, -77, 0, 57, -100, 0}, {-98, 0, 0, 17, 22, 81}, {0, 0, -23, -50, -85, -5}, {47, 18, 9, 36, -33, 0}, {0, -46, 42, 0, -98, 0}, {0, 54, 79, 0, 0, 0}}
@@ -252,15 +263,16 @@ int main() {
     std::array<std::array<int, 6>, 6> Arr { {{0, 4, 0, 0, 0, 0}, {0, 0, 0, 50, 0, -21}, {86, 10, 0, -26, 0, 0}, {0, 94, 0, 0, 0, 0}, {-52, 6, 0, 0, -6, 0}, {0, 0, 0, -75, 0, 71}}};
     std::array<std::array<int, 6>, 6> Brr { {{0, -77, 0, 57, -100, 0}, {-98, 0, 0, 17, 22, 81}, {0, 0, -23, -50, -85, -5}, {47, 18, 9, 36, -33, 0}, {0, -46, 42, 0, -98, 0}, {0, 54, 79, 0, 0, 0}} };
 
-    for (size_t i = 0; i < 6; ++i) {
-        for (size_t j = 0; j < 6; ++j) {
-            A(i, j) = i + j;//Arr[i][j];
-            B(i, j) = i + j;//Brr[i][j];
+    for (size_t i = 0; i < len; ++i) {
+        for (size_t j = 0; j < len; ++j) {
+            A.at(i, j) = (i + j + i * j) % 10;//Arr[i][j];
+            B.at(i, j) = i + j;//Brr[i][j];
         }
     }
     A.print();
 
-    A.minor(2, 2).print();
+    std::cout << A.det() << std::endl;
+
 
     return 0;
 }
