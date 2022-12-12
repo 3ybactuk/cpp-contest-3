@@ -3,10 +3,10 @@
 
 #include <cmath>
 
-const double eps = 1e-5;
+const double EPS = 1e-6;
 
 bool equal (double a, double b) {
-    return std::fabs(a - b) < eps;
+    return std::fabs(a - b) < EPS;
 }
 
 

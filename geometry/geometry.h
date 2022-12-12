@@ -51,16 +51,20 @@ public:
 
     double area() const override { return pi() * _radius * _radius; }
 
-    bool congruent_to(const shape& another) const override {
+    bool congruent_to(const shape& another) const override { return false; }
+
+    bool congruent_to(const circle& another) const {
         return equal(_radius, dynamic_cast<const circle&>(another)._radius);
     }
 
-    bool operator==(const shape& another) const override {
-        const circle& copy = dynamic_cast<const circle&>(another);
-        return (equal(copy._radius, _radius) && copy._center == _center);
+    bool operator==(const circle& another) const {
+        return (equal(another._radius, _radius) && another._center == _center);
     }
 
-    bool operator!=(const shape& another) const override { return !((*this) == another); }
+    bool operator!=(const circle& another) const { return !(*this == another); }
+
+    bool operator==(const shape& another) const override { return false; }
+    bool operator!=(const shape& another) const override { return true; }
 
     void rotate(double angle) override {} /// Does nothing. It's a circle
 
@@ -126,6 +130,7 @@ public:
         return std::abs(s_sum) / 2.0;
     }
 
+    bool congruent_to(const circle& another) const { return false; }
 
     bool congruent_to(const shape& another) const override {
         const polygon& copy = dynamic_cast<const polygon&>(another);
@@ -134,14 +139,11 @@ public:
         size_t k = _points.size();
         std::vector<std::pair<size_t, size_t>> common_sides;
         for (size_t i = 0; i < k; ++i) {
-//            std::cout << (_points[(i + 1) % k] - _points[i]).length() << " " << (copy._points[(i + 1) % k] - copy._points[i]).length() << " ";
             for (size_t j = 0; j < k; ++j) {
                 if (equal((_points[(i + 1) % k] - _points[i]).length(), (copy._points[(j + 1) % k] - copy._points[j]).length())) {
-//                    std::cout << i << " " << j;
                     common_sides.push_back(std::pair<size_t, size_t> {i, j});
                 }
             }
-//            std::cout << std::endl;
         }
 
         bool flag = false;
@@ -150,9 +152,7 @@ public:
             size_t j = (common_sides[x].second) % k;
             while ((i % k) != common_sides[x].first) {
                 flag = true;
-//                std::cout << "Y " << (i + 1) % k << " " << i % k << "\t" << mod(j - 1, k) << " " << mod(j, k) << std::endl;
-//                std::cout << "Y " << (_points[(i + 1) % k] - _points[i % k]).length() << " " << (copy._points[mod((j - 1), k)] - copy._points[mod(j, k)]).length() << std::endl;
-//                std::cout << equal((_points[(i + 1) % k] - _points[i % k]).length(), (copy._points[mod((j - 1), k)] - copy._points[mod(j, k)]).length()) << std::endl;
+
                 if (!equal((_points[(i + 1) % k] - _points[i % k]).length(), (copy._points[mod((j - 1), k)] - copy._points[mod(j, k)]).length())) {
                     flag = false;
                     break;
@@ -169,7 +169,6 @@ public:
             size_t j = (common_sides[x].second + 1) % k;
             while ((i % k) != common_sides[x].first) {
                 flag = true;
-//                std::cout << "2 " << (_points[(i + 1) % k] - _points[i]).length() << " " << (copy._points[(j + 1) % k] - copy._points[j]).length() << std::endl;
                 if (!equal((_points[(i + 1) % k] - _points[i % k]).length(), (copy._points[(j + 1) % k] - copy._points[j % k]).length())) {
                     flag = false;
                     break;
@@ -184,6 +183,9 @@ public:
 
         return false;
     }
+
+    bool operator==(const circle& another) const { return false; }
+    bool operator!=(const circle& another) const { return true; }
 
     bool operator==(const shape& another) const override {
         const polygon& copy = dynamic_cast<const polygon&>(another);
@@ -237,13 +239,13 @@ protected:
 class rectangle: public polygon {
 public:
     rectangle(const vector& center, const double height, const double width): _center(center), _height(height), _width(width) {
-        _points.push_back(vector(center.x - width / 2.0, center.y - height / 2.0));
-        _points.push_back(vector(center.x - width / 2.0, center.y + height / 2.0));
-        _points.push_back(vector(center.x + width / 2.0, center.y + height / 2.0));
         _points.push_back(vector(center.x + width / 2.0, center.y - height / 2.0));
+        _points.push_back(vector(center.x + width / 2.0, center.y + height / 2.0));
+        _points.push_back(vector(center.x - width / 2.0, center.y + height / 2.0));
+        _points.push_back(vector(center.x - width / 2.0, center.y - height / 2.0));
     }
 
-    vector center() const { return _center; }
+    vector center() const override { return _center; }
 
     double height() const { return _height; }
     double width() const { return _width; }
